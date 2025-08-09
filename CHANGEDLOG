@@ -1,0 +1,10 @@
+# Changelog
+
+## [Unreleased] - 2025-08-09
+
+### Features
+- Track original index of each character in the string.
+- Display index labels on every character.
+- Enable dragging of index labels to change their position interactively.
+- Copy updated index positions for use or export.
+
