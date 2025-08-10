@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:index_viewer/index_viewer_app.dart';
 
 /// This is a simple application,  have go goal for hundreds of characters rendering.
 /// I usually have 30/40 characters and 4/5 sentences  for my work,  and few lines,
@@ -6,7 +7,7 @@ import 'package:flutter/material.dart';
 void main() {
   runApp(
     MaterialApp(
-      home: MainApp(),
+      home: IndexViewerApp(),
       theme: ThemeData.dark().copyWith(), //
     ),
   );
