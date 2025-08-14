@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:index_viewer/index_viewer_app.dart';
 
@@ -9,6 +11,13 @@ void main() {
     MaterialApp(
       home: IndexViewerApp(),
       theme: ThemeData.dark().copyWith(), //
+      scrollBehavior: ScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.stylus,
+        },
+      ),
     ),
   );
 }

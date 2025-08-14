@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:index_viewer/widgets/index_viwer.dart';
 
+import 'two_dimensional_grid_view.dart';
+
 class StageInfo {
   const StageInfo({
     required this.data,
     required this.version,
     required this.maxX,
+    this.gridDimension = 100,
     this.mode = StageMode.normal,
   });
 
@@ -13,6 +16,9 @@ class StageInfo {
   final int maxX;
   final int version;
   final StageMode mode;
+
+  ///  to zoom in stageView for TwoDimensionalGridView
+  final double gridDimension;
 
   // FIXME: without any space lines doesnt count
   factory StageInfo.fromString(String str) {
@@ -51,8 +57,10 @@ class StageInfo {
     int? version,
     StageMode? mode, //
     int? maxX,
+    double? gridDimension,
   }) {
     return StageInfo(
+      gridDimension: gridDimension ?? this.gridDimension,
       data: data ?? this.data,
       maxX: maxX ?? this.maxX,
       version: version ?? this.version,
@@ -67,103 +75,117 @@ class StageInfo {
 }
 
 /// show each  stage, yes on each version,
-class StageView extends StatelessWidget {
+class StageView extends StatefulWidget {
   const StageView({super.key, required this.currentState, required this.mode});
   final StageInfo currentState;
   final StageMode mode;
+
+  @override
+  State<StageView> createState() => _StageViewState();
+}
+
+class _StageViewState extends State<StageView> {
+  bool scrollable = true;
+
+  ScrollPhysics? get scrollPhysics =>
+      scrollable
+          ? AlwaysScrollableScrollPhysics()
+          : NeverScrollableScrollPhysics();
+
+  ScrollableDetails get verticalDetails => ScrollableDetails.vertical(
+    physics: scrollPhysics,
+    controller: verticalController,
+  );
+
+  ScrollableDetails get horizontalDetails => ScrollableDetails.horizontal(
+    physics: scrollPhysics,
+    controller: horizontalController,
+  );
+
+  final horizontalController = ScrollController();
+  final verticalController = ScrollController();
+
+  @override
+  void dispose() {
+    horizontalController.dispose();
+    verticalController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final double boxWidth =
-        MediaQuery.sizeOf(context).width / currentState.maxX - 4;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 24,
       children: [
-        for (final row in currentState.data)
-          Row(
-            spacing: 2,
-            children: [
-              for (final indexData in row) //
-                () {
-                  final card = SizedBox.square(
-                    dimension: boxWidth,
-                    child: IndexViwer(mode: mode, data: indexData),
-                  );
-                  return Draggable<IndexData>(
-                    data: indexData,
-                    feedback: ColoredBox(color: Colors.grey, child: card),
-                    childWhenDragging: ColoredBox(
-                      color: Colors.green,
-                      child: card,
-                    ),
-                    child: card,
-                  );
-                }(),
-            ],
-          ),
-      ],
-    );
-  }
-}
-
-/// from [StageView]  to this for new one,
-/// this is just DragTarget
-class NewStageView extends StatefulWidget {
-  const NewStageView({super.key, required this.stage});
-
-  /// current stage
-  final StageInfo stage;
-
-  @override
-  State<NewStageView> createState() => _NewStageViewState();
-}
-
-class _NewStageViewState extends State<NewStageView> {
-  late final gridSize = (
-    rows: widget.stage.data.length + 0,
-    cols: widget.stage.maxX + 0,
-  );
-  late List<List<IndexData>> data = List.generate(
-    gridSize.rows,
-    (x) => List.generate(gridSize.cols, ((y) => IndexData.empty)),
-  );
-
-  StageMode mode = StageMode.normal;
-
-  @override
-  Widget build(BuildContext context) {
-    final double boxWidth =
-        MediaQuery.sizeOf(context).width / gridSize.cols - 4;
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          for (int x = 0; x < gridSize.rows; x++)
-            Row(
-              //try gridView ?
-              spacing: 2,
-              children: [
-                for (int y = 0; y < gridSize.cols; y++) //
-                  DragTarget<IndexData>(
-                    builder: (
-                      BuildContext context,
-                      List<dynamic> accepted,
-                      List<dynamic> rejected,
-                    ) {
-                      return SizedBox(
-                        width: boxWidth,
-                        child: IndexViwer(mode: mode, data: data[x][y]),
-                      );
-                    },
-                    onAcceptWithDetails: (
-                      DragTargetDetails<IndexData> details,
-                    ) {
-                      data[x][y] = details.data;
-                      setState(() {});
-                    },
-                  ),
-              ],
+        Row(
+          children: [
+            IconButton(
+              onPressed: () {
+                scrollable = true;
+                setState(() {});
+              },
+              color: !scrollable ? Colors.grey : Colors.blueAccent,
+              icon: Icon(Icons.pan_tool),
             ),
-        ],
-      ),
+            IconButton(
+              onPressed: () {
+                scrollable = false;
+                setState(() {});
+              },
+              color: scrollable ? Colors.grey : Colors.blueAccent,
+              icon: Icon(Icons.drag_handle),
+            ),
+          ],
+        ),
+        Expanded(
+          child: TwoDimensionalGridView(
+            key: ValueKey(
+              "Stage view $scrollable",
+            ), // there is a bug, changing physics doesn't getBack scroll able   ,  need to improve
+            gridDimension: widget.currentState.gridDimension,
+            mainAxisSpacing: 20,
+            crossAxisSpacing: 20,
+            horizontalDetails: horizontalDetails,
+            verticalDetails: verticalDetails,
+            delegate: TwoDimensionalChildBuilderDelegate(
+              maxXIndex: widget.currentState.maxX,
+              maxYIndex: widget.currentState.data.length,
+              builder: (context, vicinity) {
+                var data =
+                    vicinity.xIndex < widget.currentState.data.length &&
+                            vicinity.yIndex <
+                                widget.currentState.data[vicinity.xIndex].length
+                        ? widget.currentState.data[vicinity.xIndex][vicinity
+                            .yIndex]
+                        : null;
+                if (data == null) {
+                  return Text(".");
+                }
+                final child = SizedBox.square(
+                  dimension:
+                      widget.currentState.gridDimension -
+                      20, // the spacing I was having
+                  child: IndexViwer(mode: widget.mode, data: data),
+                );
+                return child;
+                return !scrollable
+                    ? Draggable<IndexData>(
+                      key: ValueKey(data),
+                      data: data,
+                      feedback: ColoredBox(color: Colors.grey, child: child),
+                      childWhenDragging: ColoredBox(
+                        color: Colors.green,
+                        child: child,
+                      ),
+                      child: child,
+                    )
+                    : child;
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
