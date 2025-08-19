@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:index_viewer/widgets/index_viwer.dart';
 
+import 'stage_actions_view.dart';
 import 'two_dimensional_grid_view.dart';
 
 class StageInfo {
@@ -22,26 +23,35 @@ class StageInfo {
 
   // FIXME: without any space lines doesnt count
   factory StageInfo.fromString(String str) {
-    List<List<IndexData>> result = [];
     final lines = str.split("\n");
-    int maxWidth = 0;
-    for (int y = 0; y < lines.length; y++) {
-      if (maxWidth < lines[y].length) maxWidth = lines[y].length;
-      final List<IndexData> rows = [];
-      for (int x = 0; x < lines[y].length; x++) {
-        rows.add(
-          IndexData(
-            char: lines[y][x],
-            idx: x,
-            idy: y,
-            cdx: x,
-            cdy: y,
 
-            version: 1,
-          ),
-        );
+    int maxWidth = 0;
+    for (final line in lines) {
+      if (line.length > maxWidth) {
+        maxWidth = line.length;
       }
-      result.add(rows);
+    }
+
+    List<List<IndexData>> result = [];
+    for (int y = 0; y < lines.length; y++) {
+      final line = lines[y];
+      final List<IndexData> row = [];
+
+      for (int x = 0; x < maxWidth; x++) {
+        final item =
+            x < line.length
+                ? IndexData(
+                  char: line[x],
+                  idx: x,
+                  idy: y,
+                  cdx: x,
+                  cdy: y,
+                  version: 1,
+                )
+                : IndexData.empty;
+        row.add(item);
+      }
+      result.add(row);
     }
 
     return StageInfo(
@@ -85,10 +95,10 @@ class StageView extends StatefulWidget {
 }
 
 class _StageViewState extends State<StageView> {
-  bool scrollable = true;
+  StageAction stageAction = StageAction.drag;
 
   ScrollPhysics? get scrollPhysics =>
-      scrollable
+      !stageAction.isDraggable
           ? AlwaysScrollableScrollPhysics()
           : NeverScrollableScrollPhysics();
 
@@ -118,30 +128,16 @@ class _StageViewState extends State<StageView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 24,
       children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: () {
-                scrollable = true;
-                setState(() {});
-              },
-              color: !scrollable ? Colors.grey : Colors.blueAccent,
-              icon: Icon(Icons.pan_tool),
-            ),
-            IconButton(
-              onPressed: () {
-                scrollable = false;
-                setState(() {});
-              },
-              color: scrollable ? Colors.grey : Colors.blueAccent,
-              icon: Icon(Icons.drag_handle),
-            ),
-          ],
+        StageActionsView(
+          onChange: (v) {
+            stageAction = v;
+            setState(() {});
+          },
         ),
         Expanded(
           child: TwoDimensionalGridView(
             key: ValueKey(
-              "Stage view $scrollable",
+              "Stage view $stageAction",
             ), // there is a bug, changing physics doesn't getBack scroll able   ,  need to improve
             gridDimension: widget.currentState.gridDimension,
             mainAxisSpacing: 20,
@@ -153,14 +149,14 @@ class _StageViewState extends State<StageView> {
               maxYIndex: widget.currentState.data.length,
               builder: (context, vicinity) {
                 var data =
-                    vicinity.xIndex < widget.currentState.data.length &&
-                            vicinity.yIndex <
-                                widget.currentState.data[vicinity.xIndex].length
-                        ? widget.currentState.data[vicinity.xIndex][vicinity
-                            .yIndex]
+                    vicinity.yIndex < widget.currentState.data.length &&
+                            vicinity.xIndex <
+                                widget.currentState.data[vicinity.yIndex].length
+                        ? widget.currentState.data[vicinity.yIndex][vicinity
+                            .xIndex]
                         : null;
-                if (data == null) {
-                  return Text(".");
+                if (data == null || data == IndexData.empty) {
+                  return Text(" ");
                 }
                 final child = SizedBox.square(
                   dimension:
@@ -168,10 +164,8 @@ class _StageViewState extends State<StageView> {
                       20, // the spacing I was having
                   child: IndexViwer(mode: widget.mode, data: data),
                 );
-                return child;
-                return !scrollable
+                return stageAction.isDraggable
                     ? Draggable<IndexData>(
-                      key: ValueKey(data),
                       data: data,
                       feedback: ColoredBox(color: Colors.grey, child: child),
                       childWhenDragging: ColoredBox(

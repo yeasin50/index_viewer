@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'index_viwer.dart';
 import 'stage_view.dart';
+import 'two_dimensional_grid_view.dart' show TwoDimensionalGridView;
 
 /// from [StageView]  to this for new one,
 /// this is just DragTarget
@@ -16,52 +17,81 @@ class NewStageView extends StatefulWidget {
 }
 
 class _NewStageViewState extends State<NewStageView> {
-  late final gridSize = (
+  get gridSize => (
     rows: widget.stage.data.length + 0,
     cols: widget.stage.maxX + 0,
   );
+
   late List<List<IndexData>> data = List.generate(
     gridSize.rows,
     (x) => List.generate(gridSize.cols, ((y) => IndexData.empty)),
   );
 
   StageMode mode = StageMode.normal;
-
   @override
   Widget build(BuildContext context) {
-    final double boxWidth =
-        MediaQuery.sizeOf(context).width / gridSize.cols - 4;
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          for (int x = 0; x < gridSize.rows; x++)
-            Row(
-              //try gridView ?
-              spacing: 2,
-              children: [
-                for (int y = 0; y < gridSize.cols; y++) //
-                  DragTarget<IndexData>(
-                    builder: (
-                      BuildContext context,
-                      List<dynamic> accepted,
-                      List<dynamic> rejected,
-                    ) {
-                      return SizedBox(
-                        width: boxWidth,
-                        child: IndexViwer(mode: mode, data: data[x][y]),
-                      );
-                    },
-                    onAcceptWithDetails: (
-                      DragTargetDetails<IndexData> details,
-                    ) {
-                      data[x][y] = details.data;
-                      setState(() {});
-                    },
-                  ),
-              ],
+    final double spacing = 20;
+    final double boxWidth = 80;
+    return Column(
+      children: [
+        Expanded(
+          child: TwoDimensionalGridView(
+            key: ValueKey("new Stage"),
+            gridDimension: boxWidth + spacing,
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            delegate: TwoDimensionalChildBuilderDelegate(
+              maxXIndex: gridSize.cols,
+              maxYIndex: gridSize.rows,
+              addRepaintBoundaries: true,
+              builder: (context, vicinity) {
+                var indexData =
+                    vicinity.yIndex < data.length &&
+                            vicinity.xIndex < data[vicinity.yIndex].length
+                        ? data[vicinity.yIndex][vicinity.xIndex]
+                        : null;
+
+                assert(indexData != null, "indexData  should not be empty");
+                return DragTarget<IndexData>(
+                  builder: (
+                    BuildContext context,
+                    List<dynamic> accepted,
+                    List<dynamic> rejected,
+                  ) {
+                    return SizedBox(
+                      width: boxWidth,
+                      child: IndexViwer(
+                        key: ValueKey(indexData),
+                        mode: mode,
+                        data: indexData!,
+                        onDelete:
+                            indexData == IndexData.empty
+                                ? null
+                                : () async {
+                                  data[vicinity.yIndex] = List.from(
+                                    data[vicinity.yIndex],
+                                  );
+                                  data[vicinity.yIndex][vicinity.xIndex] =
+                                      IndexData.empty;
+                                  await Future.delayed(Durations.medium1);
+                                  setState(() {});
+                                },
+                      ),
+                    );
+                  },
+                  onAcceptWithDetails: (DragTargetDetails<IndexData> details) {
+                    data[vicinity.yIndex][vicinity.xIndex] = details.data;
+                    data = [...data]; //still this doesnt work  -_-. ... 
+                    print(data[vicinity.yIndex][vicinity.xIndex]);
+
+                    setState(() {});
+                  },
+                );
+              },
             ),
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 }
