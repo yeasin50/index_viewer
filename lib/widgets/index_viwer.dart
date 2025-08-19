@@ -57,7 +57,7 @@ class IndexData {
 
 /// show index char with details based on [mode]
 ///
-class IndexViwer extends StatefulWidget {
+class IndexViwer extends StatelessWidget {
   const IndexViwer({
     super.key,
     required this.mode,
@@ -72,27 +72,10 @@ class IndexViwer extends StatefulWidget {
   final VoidCallback? onDelete;
 
   @override
-  State<IndexViwer> createState() => _IndexViwerState();
-}
-
-class _IndexViwerState extends State<IndexViwer> {
-  /// something wrong with cache so I have made this stateful
-  late IndexData data = widget.data.copyWith();
-  @override
-  void didUpdateWidget(covariant IndexViwer oldWidget) {
-    if (oldWidget.data != data) {
-      data = widget.data;
-      print("change ... ");
-      setState(() {});
-    }
-    super.didUpdateWidget(oldWidget);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme;
     final idxyStrint = data == IndexData.empty ? "" : "${data.idx}-${data.idy}";
-    final texts = switch (widget.mode) {
+    final texts = switch (mode) {
       StageMode.normal => (primaryText: data.char, smallText: idxyStrint),
       StageMode.indexChange => (primaryText: idxyStrint, smallText: data.char),
     };
@@ -112,12 +95,12 @@ class _IndexViwerState extends State<IndexViwer> {
                 left: 4,
                 child: Text(texts.smallText, style: textStyle.bodyMedium),
               ),
-            if (widget.onDelete != null)
+            if (onDelete != null)
               Positioned(
                 right: 0,
                 top: 0,
                 child: InkWell(
-                  onTap: widget.onDelete,
+                  onTap: onDelete,
                   child: Icon(Icons.close, color: Colors.redAccent),
                 ),
               ),
