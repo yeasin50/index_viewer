@@ -67,13 +67,12 @@ class _NewStageViewState extends State<NewStageView> {
                         onDelete:
                             indexData == IndexData.empty
                                 ? null
-                                : () async {
+                                : () {
                                   data[vicinity.yIndex] = List.from(
                                     data[vicinity.yIndex],
                                   );
                                   data[vicinity.yIndex][vicinity.xIndex] =
                                       IndexData.empty;
-                                  await Future.delayed(Durations.medium1);
                                   setState(() {});
                                 },
                       ),
@@ -81,8 +80,6 @@ class _NewStageViewState extends State<NewStageView> {
                   },
                   onAcceptWithDetails: (DragTargetDetails<IndexData> details) {
                     data[vicinity.yIndex][vicinity.xIndex] = details.data;
-                    data = [...data]; //still this doesnt work  -_-. ... 
-                    print(data[vicinity.yIndex][vicinity.xIndex]);
 
                     setState(() {});
                   },

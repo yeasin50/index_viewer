@@ -95,25 +95,26 @@ class StageView extends StatefulWidget {
 }
 
 class _StageViewState extends State<StageView> {
-  StageAction stageAction = StageAction.drag;
+  StageAction stageAction = StageAction.scrollabe;
 
-  ScrollPhysics? get scrollPhysics =>
-      !stageAction.isDraggable
-          ? AlwaysScrollableScrollPhysics()
-          : NeverScrollableScrollPhysics();
+  bool scrollable = true;
+
+  final ScrollController verticalController = ScrollController();
+  final ScrollController horizontalController = ScrollController();
 
   ScrollableDetails get verticalDetails => ScrollableDetails.vertical(
-    physics: scrollPhysics,
     controller: verticalController,
+    physics:
+        scrollable ? BouncingScrollPhysics() : NeverScrollableScrollPhysics(),
   );
 
   ScrollableDetails get horizontalDetails => ScrollableDetails.horizontal(
-    physics: scrollPhysics,
     controller: horizontalController,
+    physics:
+        scrollable ? BouncingScrollPhysics() : NeverScrollableScrollPhysics(),
   );
 
-  final horizontalController = ScrollController();
-  final verticalController = ScrollController();
+
 
   @override
   void dispose() {
@@ -129,21 +130,26 @@ class _StageViewState extends State<StageView> {
       spacing: 24,
       children: [
         StageActionsView(
+          stageAction: stageAction,
           onChange: (v) {
             stageAction = v;
+            scrollable =  v.isScrollable;
             setState(() {});
           },
         ),
         Expanded(
           child: TwoDimensionalGridView(
-            key: ValueKey(
-              "Stage view $stageAction",
-            ), // there is a bug, changing physics doesn't getBack scroll able   ,  need to improve
+            key: ValueKey("two_dimensional_grid"),
             gridDimension: widget.currentState.gridDimension,
             mainAxisSpacing: 20,
             crossAxisSpacing: 20,
             horizontalDetails: horizontalDetails,
             verticalDetails: verticalDetails,
+            diagonalDragBehavior:
+                stageAction.isScrollable
+                    ? DiagonalDragBehavior.free
+                    : DiagonalDragBehavior
+                        .none, // disable drag when not scrollable
             delegate: TwoDimensionalChildBuilderDelegate(
               maxXIndex: widget.currentState.maxX,
               maxYIndex: widget.currentState.data.length,
@@ -164,7 +170,7 @@ class _StageViewState extends State<StageView> {
                       20, // the spacing I was having
                   child: IndexViwer(mode: widget.mode, data: data),
                 );
-                return stageAction.isDraggable
+                return stageAction.isArrage
                     ? Draggable<IndexData>(
                       data: data,
                       feedback: ColoredBox(color: Colors.grey, child: child),

@@ -8,8 +8,17 @@ import 'dart:math' as math;
 ///
 /// ```dart
 ///  TwoDimensionalGridView(
-///   gridDimension: 20,
-///   diagonalDragBehavior: DiagonalDragBehavior.free,
+///    key: ValueKey("two_dimensional_grid"),
+///    gridDimension: widget.currentState.gridDimension,
+///    mainAxisSpacing: 20,
+///    crossAxisSpacing: 20,
+///    horizontalDetails: horizontalDetails,
+///    verticalDetails: verticalDetails,
+///    diagonalDragBehavior:
+///        stageAction.isScrollable
+///            ? DiagonalDragBehavior.free
+///            : DiagonalDragBehavior
+///                .none,
 ///   cacheExtent: 500,
 ///   delegate: TwoDimensionalChildBuilderDelegate(
 ///     maxXIndex: 130,
@@ -52,7 +61,6 @@ class TwoDimensionalGridView extends TwoDimensionalScrollView {
 
   final double crossAxisSpacing;
   final double mainAxisSpacing;
-  
 
   @override
   Widget buildViewport(
@@ -98,7 +106,7 @@ class TwoDimensionalGridViewPort extends TwoDimensionalViewport {
 
   @override
   RenderTwoDimensionalViewport createRenderObject(BuildContext context) {
-    return RenderTreeViewPostT(
+    return RenderTree2DGridViewPort(
       gridDimension: gridDimension,
       horizontalOffset: horizontalOffset,
       horizontalAxisDirection: horizontalAxisDirection,
@@ -107,6 +115,8 @@ class TwoDimensionalGridViewPort extends TwoDimensionalViewport {
       delegate: delegate,
       mainAxis: mainAxis,
       childManager: context as TwoDimensionalChildManager,
+      crossAxisSpacing: crossAxisSpacing,
+      mainAxisSpacing: mainAxisSpacing,
     );
   }
 
@@ -115,12 +125,20 @@ class TwoDimensionalGridViewPort extends TwoDimensionalViewport {
     BuildContext context,
     covariant RenderTwoDimensionalViewport renderObject,
   ) {
-    super.updateRenderObject(context, renderObject);
+    renderObject
+      ..horizontalOffset = horizontalOffset
+      ..horizontalAxisDirection = horizontalAxisDirection
+      ..verticalOffset = verticalOffset
+      ..verticalAxisDirection = verticalAxisDirection
+      ..mainAxis = mainAxis
+      ..delegate = delegate
+      ..cacheExtent = cacheExtent
+      ..clipBehavior = clipBehavior;
   }
 }
 
-class RenderTreeViewPostT extends RenderTwoDimensionalViewport {
-  RenderTreeViewPostT({
+class RenderTree2DGridViewPort extends RenderTwoDimensionalViewport {
+  RenderTree2DGridViewPort({
     required super.horizontalOffset,
     required super.horizontalAxisDirection,
     required super.verticalOffset,
@@ -140,7 +158,7 @@ class RenderTreeViewPostT extends RenderTwoDimensionalViewport {
   final double mainAxisSpacing;
 
   @override
-  void layoutChildSequence() async {
+  void layoutChildSequence() {
     final double horizontalPixels = horizontalOffset.pixels;
     final double verticalPixels = verticalOffset.pixels;
 

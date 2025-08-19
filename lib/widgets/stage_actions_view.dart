@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 
 enum StageAction {
-  drag,
-  move;
+  // when  pick mode
+  arrage,
 
-  bool get isDraggable => this == StageAction.drag;
+  // just drag mode,  free scroll
+  scrollabe;
+
+  bool get isArrage => this == StageAction.arrage;
+  bool get isScrollable => this == StageAction.scrollabe;
 }
 
 /// actions buttons to decide drag or move items
-class StageActionsView extends StatefulWidget {
+class StageActionsView extends StatelessWidget {
   const StageActionsView({
     super.key,
-    this.stageAction = StageAction.drag,
+    required this.stageAction,
     required this.onChange,
   });
 
@@ -19,32 +23,23 @@ class StageActionsView extends StatefulWidget {
   final ValueChanged<StageAction> onChange;
 
   @override
-  State<StageActionsView> createState() => _StageActionsViewState();
-}
-
-class _StageActionsViewState extends State<StageActionsView> {
-  late bool scrollable = widget.stageAction == StageAction.drag ? false : true;
-  @override
   Widget build(BuildContext context) {
     return Row(
       children: [
+        Text(stageAction.toString()),
         IconButton(
           onPressed: () {
-            widget.onChange(StageAction.drag);
-            scrollable = true;
-            setState(() {});
+            onChange(StageAction.scrollabe);
           },
-          color: !scrollable ? Colors.grey : Colors.blueAccent,
-          icon: Icon(Icons.ads_click),
+          color: stageAction.isScrollable ? Colors.blueAccent : Colors.grey,
+          icon: Icon(Icons.pan_tool),
         ),
         IconButton(
           onPressed: () {
-            widget.onChange(StageAction.move);
-            scrollable = false;
-            setState(() {});
+            onChange(StageAction.arrage);
           },
-          color: scrollable ? Colors.grey : Colors.blueAccent,
-          icon: Icon(Icons.pan_tool),
+          color: stageAction.isArrage ? Colors.blueAccent : Colors.grey,
+          icon: Icon(Icons.ads_click),
         ),
       ],
     );
